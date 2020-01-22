@@ -4,12 +4,14 @@
  * SPDX-License-Identifier: MIT
  * For full license text, see the LICENSE file in the repo root or https://opensource.org/licenses/MIT
  */
-import { assert, isUndefined, ArrayPush, getOwnPropertyNames } from '@lwc/shared';
+import { assert, isUndefined, ArrayPush, getOwnPropertyNames, defineProperty } from '@lwc/shared';
 import { ComponentInterface } from './component';
 import { componentValueMutated, ReactiveObserver } from './mutation-tracker';
 import { VM, runWithBoundaryProtection } from './vm';
 import { invokeComponentCallback } from './invoker';
 import { dispatchEvent } from '../env/dom';
+
+const ElementWithWireKey = '$$ElementWithWireKey$$';
 
 const WireMetaMap: Map<PropertyDescriptor, WireDef> = new Map();
 function noop(): void {}
@@ -110,6 +112,14 @@ function createConnector(vm: VM, name: string, wireDef: WireDef): WireAdapter {
         : createMethodDataCallback(vm, method);
     let context: ContextValue | undefined;
     let connector: WireAdapter;
+
+    // Workaround to pass the component element associated to this wire adapter instance.
+    defineProperty(dataCallback, ElementWithWireKey, {
+        writable: false,
+        configurable: false,
+        value: vm.elm,
+    });
+
     runWithBoundaryProtection(
         vm,
         vm,

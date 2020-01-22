@@ -7,6 +7,9 @@
 
 const { freeze, defineProperty } = Object;
 
+// This value needs to be in sync with wiring.ts from @lwc/engine
+const ElementWithWireKey = '$$ElementWithWireKey$$';
+
 /**
  * Registers a wire adapter factory for Lightning Platform.
  * @deprecated
@@ -87,6 +90,7 @@ export interface WireAdapterConstructor {
 
 export class WireAdapter {
     private callback: dataCallback;
+    private readonly wiredComponent: EventTarget;
 
     private connecting: NoArgumentListener[] = [];
     private disconnecting: NoArgumentListener[] = [];
@@ -113,6 +117,7 @@ export class WireAdapter {
 
     constructor(callback: dataCallback) {
         this.callback = callback;
+        this.wiredComponent = callback[ElementWithWireKey];
         this.eventTarget = {
             addEventListener: (type: string, listener: WireEventTargetListener): void => {
                 switch (type) {
@@ -154,10 +159,13 @@ export class WireAdapter {
                         throw new Error(`Invalid event type ${type}.`);
                 }
             },
-            dispatchEvent: (evt: ValueChangedEvent): boolean => {
+            dispatchEvent: (evt: ValueChangedEvent | Event): boolean => {
                 if (evt instanceof ValueChangedEvent) {
                     const value = evt.value;
                     this.callback(value);
+                } else if (evt.type === 'WireContextEvent' || evt.type === 'wirecontextevent') {
+                    // TODO [#1357]: remove this branch
+                    return this.wiredComponent.dispatchEvent(evt);
                 } else {
                     throw new Error(`Invalid event type ${(evt as any).type}.`);
                 }

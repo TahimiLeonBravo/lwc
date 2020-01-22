@@ -15,7 +15,7 @@ describe('WireEventTarget from register', () => {
                 (wireEventTarget = wireEvtTarget);
 
             register(adapterId, adapterFactory);
-            const adapter = new adapterId.adapter();
+            const adapter = new adapterId.adapter(() => {});
 
             const listener1 = jest.fn();
             const listener2 = jest.fn();
@@ -132,6 +132,41 @@ describe('WireEventTarget from register', () => {
             expect(dataCallback.mock.calls[0][0]).toBe(expected);
         });
 
+        it('should dispatchEvent in wiredComponent when dispatching event with type WireContextEvent or wirecontextevent', () => {
+            const adapterId = {};
+            let wireEventTarget: WireEventTarget;
+            const dataCallback = jest.fn();
+            const wiredElementMock = {
+                dispatchEvent: jest.fn(),
+            };
+            dataCallback.$$ElementWithWireKey$$ = wiredElementMock;
+            const adapterFactory = (wireEvtTarget: WireEventTarget) =>
+                (wireEventTarget = wireEvtTarget);
+
+            register(adapterId, adapterFactory);
+            new adapterId.adapter(dataCallback);
+
+            const wireContextEvent = new CustomEvent('WireContextEvent', {
+                detail: {
+                    foo: 'bar',
+                },
+            });
+            const wireContextEventInLowercase = new CustomEvent('wirecontextevent', {
+                detail: {
+                    foo: 'bar',
+                },
+            });
+
+            wireEventTarget!.dispatchEvent(wireContextEvent);
+            wireEventTarget!.dispatchEvent(wireContextEventInLowercase);
+
+            expect(wiredElementMock.dispatchEvent).toHaveBeenCalledTimes(2);
+            expect(wiredElementMock.dispatchEvent.mock.calls[0][0]).toBe(wireContextEvent);
+            expect(wiredElementMock.dispatchEvent.mock.calls[1][0]).toBe(
+                wireContextEventInLowercase
+            );
+        });
+
         it('should throw on non-ValueChangedEvent', () => {
             const adapterId = {};
             let wireEventTarget: WireEventTarget;
@@ -185,7 +220,7 @@ describe('WireEventTarget from register', () => {
                     (wireEventTarget = wireEvtTarget);
 
                 register(adapterId, adapterFactory);
-                const adapter = new adapterId.adapter();
+                const adapter = new adapterId.adapter(() => {});
 
                 const listener = jest.fn();
                 wireEventTarget.addEventListener(eventType, listener);
@@ -206,7 +241,7 @@ describe('WireEventTarget from register', () => {
                 (wireEventTarget = wireEvtTarget);
 
             register(adapterId, adapterFactory);
-            new adapterId.adapter();
+            new adapterId.adapter(() => {});
 
             expect(() => {
                 const testEvent = 'test' as any;
