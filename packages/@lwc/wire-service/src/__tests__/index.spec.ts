@@ -139,7 +139,7 @@ describe('WireEventTarget from register', () => {
             const wiredElementMock = {
                 dispatchEvent: jest.fn(),
             };
-            dataCallback.$$ElementWithWireKey$$ = wiredElementMock;
+            dataCallback.$$DeprecatedWiredElementHostKey$$ = wiredElementMock;
             const adapterFactory = (wireEvtTarget: WireEventTarget) =>
                 (wireEventTarget = wireEvtTarget);
 
